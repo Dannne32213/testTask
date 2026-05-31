@@ -202,8 +202,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 3317918940054847848}
-        m_TargetAssemblyTypeName: WindowManager, Assembly-CSharp
+      - m_Target: {fileID: 980014736}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
         m_MethodName: OpenWindow
         m_Mode: 2
         m_Arguments:
@@ -1377,9 +1377,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 3317918940054847848}
-        m_TargetAssemblyTypeName: WindowManager, Assembly-CSharp
-        m_MethodName: OpenWindow
+      - m_Target: {fileID: 980014736}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: ExitGamePopup
         m_Mode: 2
         m_Arguments:
           m_ObjectArgument: {fileID: 55999974}
@@ -2981,9 +2981,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 3317918940054847848}
-        m_TargetAssemblyTypeName: WindowManager, Assembly-CSharp
-        m_MethodName: CloseTopWindow
+      - m_Target: {fileID: 980014736}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: ClosePopup
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3482,9 +3482,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 3317918940054847848}
-        m_TargetAssemblyTypeName: WindowManager, Assembly-CSharp
-        m_MethodName: CloseTopWindow
+      - m_Target: {fileID: 980014736}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: ClosePopup
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3664,7 +3664,15 @@ PrefabInstance:
     - target: {fileID: 2056883906595309584, guid: aa86f60b84062fc488ca0f17ec50323e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 3317918940054847848}
+      objectReference: {fileID: 980014736}
+    - target: {fileID: 2056883906595309584, guid: aa86f60b84062fc488ca0f17ec50323e, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ClosePopup
+      objectReference: {fileID: 0}
+    - target: {fileID: 2056883906595309584, guid: aa86f60b84062fc488ca0f17ec50323e, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: GameManager, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 5226273789582715401, guid: aa86f60b84062fc488ca0f17ec50323e, type: 3}
       propertyPath: m_Colors.m_PressedColor.b
       value: 0.3019608

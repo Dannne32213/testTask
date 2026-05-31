@@ -94,4 +94,14 @@ public class GameManager : MonoBehaviour
         
         SceneManager.LoadScene("GamePlay");
     }
+
+    public void ClosePopup()
+    {
+        WindowManager.Instance.CloseTopWindow();
+    }
+
+    public void OpenWindow(WindowBase popup)
+    {
+        WindowManager.Instance.OpenWindow(popup);
+    }
 }

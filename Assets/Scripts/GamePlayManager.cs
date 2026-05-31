@@ -21,8 +21,10 @@ public class GamePlayManager : MonoBehaviour
         
         if (Inputs.Instance != null)
         {
+            Inputs.Instance.ClearAllActiveMaps();
             Inputs.Instance.EnableMap("Gameplay", 5);
-            Inputs.Instance.EnableMap("Pausepressed", 10);
+            Inputs.Instance.EnableMap("Pausepressed", 15);
+            Debug.Log("[GamePlayManager] Input maps initialized correctly.");
         }
 
         if (volumeSlider != null)
@@ -34,7 +36,7 @@ public class GamePlayManager : MonoBehaviour
 
         _canCheckPause = false;
         if (pauseWindow != null) pauseWindow.gameObject.SetActive(false);
-        Invoke(nameof(EnablePauseCheck), 0.1f);
+        Invoke(nameof(EnablePauseCheck), 0.2f);
     }
 
     private bool _canCheckPause = false;
@@ -55,15 +57,17 @@ public class GamePlayManager : MonoBehaviour
         
         if (_canCheckPause && Inputs.Instance.PausePressed)
         {
-            if (pauseWindow != null && WindowManager.Instance != null && WindowManager.Instance.GetTopWindow() == null)
+            var top = WindowManager.Instance != null ? WindowManager.Instance.GetTopWindow() : null;
+            if (pauseWindow != null && WindowManager.Instance != null && top != pauseWindow)
             {
-                Debug.Log("[GamePlayManager] Pauză activată.");
+                Debug.Log("[GamePlayManager] Deschidere Pauză.");
                 WindowManager.Instance.OpenWindow(pauseWindow);
                 Time.timeScale = 0;
                 return; 
             }
         }
         
+        // 2. BLOCARE GAMEPLAY DACĂ UN MENIU ESTE DESCHIS
         if (WindowManager.Instance != null && WindowManager.Instance.GetTopWindow() != null)
         {
             return;
@@ -71,6 +75,7 @@ public class GamePlayManager : MonoBehaviour
         
         bool actionTriggered = false;
         
+        // Verificăm taste / gamepad
         if (Keyboard.current != null && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame))
         {
             actionTriggered = true;
@@ -80,6 +85,7 @@ public class GamePlayManager : MonoBehaviour
             actionTriggered = true;
         }
         
+        // Verificăm Click-ul de Mouse (fără UI)
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
@@ -141,7 +147,7 @@ public class GamePlayManager : MonoBehaviour
         SaveSystem.playerData.playerColor = targetObject != null ? targetObject.material.color : Color.white;
 
         SaveSystem.SaveData();
-        Debug.Log("[GamePlayManager] Save.");
+        Debug.Log("[GamePlayManager] Save triggered.");
     }
 
     public void Unpause()
@@ -152,6 +158,7 @@ public class GamePlayManager : MonoBehaviour
 
     public void MainMenu()
     {
+        Time.timeScale = 1;
         SceneManager.LoadScene("WindowScene");
     }
 
@@ -172,16 +179,15 @@ public class GamePlayManager : MonoBehaviour
         if (data != null)
         {
             _currentScore = data.score;
-            
             if (targetObject != null)
             {
                 targetObject.material.color = data.playerColor;
             }
-
             AudioListener.volume = data.masterVolume;
         }
 
         UpdateScoreUI();
+        Debug.Log($"[GamePlayManager] Data Loaded. Score: {_currentScore}");
     }
 
     private void OnApplicationQuit()

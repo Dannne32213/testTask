@@ -46,7 +46,7 @@ public class Inputs : MonoBehaviour
         {
             return;
         }
-
+        
         foreach (var map in inputActionAsset.actionMaps)
         {
             map.actionTriggered += OnActionTriggered;
@@ -76,13 +76,13 @@ public class Inputs : MonoBehaviour
         if (context.action == null || context.control == null) return;
         
         if (Time.unscaledTime - _lastSwitchTime < SwitchCooldown) return;
-
+        
         if (!context.started && !context.performed) return;
 
         InputDevice device = context.control.device;
         bool isGamepad = device is Gamepad;
         bool isPC = device is Keyboard || device is Mouse;
-
+        
         if (isGamepad)
         {
             if (context.action.type == InputActionType.Value)
@@ -92,7 +92,7 @@ public class Inputs : MonoBehaviour
                 if (value is Vector2 v) magnitude = v.magnitude;
                 else if (value is float f) magnitude = Mathf.Abs(f);
 
-                if (magnitude < 0.25f) return;
+                if (magnitude < 0.25f) return; // Prag ridicat pentru a ignora stick drift
             }
 
             if (CurrentScheme != ControlScheme.Console)
@@ -103,10 +103,12 @@ public class Inputs : MonoBehaviour
         }
         else if (isPC)
         {
+            
             if (context.action.name == "Point") return;
 
             if (context.action.name == "Move" && device is Mouse)
             {
+                // Verificăm dacă mouse-ul s-a mișcat efectiv
                 if (Mouse.current.delta.ReadValue().magnitude < 2.0f) return;
             }
 
@@ -122,7 +124,7 @@ public class Inputs : MonoBehaviour
     {
         CurrentScheme = newScheme;
         ApplyCursorStateForScheme();
-
+        
         if (newScheme == ControlScheme.Console)
         {
             RestoreUISelection();
@@ -162,6 +164,7 @@ public class Inputs : MonoBehaviour
 
     private void OnGUI()
     {
+        // FORCE DRAWING REGARDLESS OF SETTINGS FOR DEBUGGING
         GUI.depth = -2000;
         
         Rect areaRect = new Rect(10, 10, 500, 250);
@@ -190,6 +193,12 @@ public class Inputs : MonoBehaviour
         }
 
         GUILayout.EndArea();
+    }
+
+    public void ClearAllActiveMaps()
+    {
+        _activeMaps.Clear();
+        EvaluateActiveMaps();
     }
 
     public void EnableMap(string mapName, int priority)
@@ -259,7 +268,6 @@ public class Inputs : MonoBehaviour
     {
         var action = GetAction(name);
         bool triggered = action?.triggered ?? false;
-        if (triggered) Debug.Log($"[Inputs] Action TRIGGERED: {name}");
         return triggered;
     }
     public bool IsPressed(string name) => GetAction(name)?.IsPressed() ?? false;

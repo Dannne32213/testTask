@@ -19,7 +19,9 @@ public class WindowManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
         Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
     private void Start()
@@ -86,6 +88,8 @@ public class WindowManager : MonoBehaviour
             {
                 Inputs.Instance.DisableMap("UI");
                 Inputs.Instance.EnableMap("Gameplay", 10);
+                Inputs.Instance.EnableMap("Pausepressed", 10);
+                Debug.Log("[WindowManager] Toate ferestrele închise. Re-activăm Gameplay și Pausepressed.");
             }
         }
     }

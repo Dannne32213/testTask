@@ -189,14 +189,21 @@ public class Inputs : MonoBehaviour
 
         foreach (var map in inputActionAsset.actionMaps)
         {
-            if (toEnable.Contains(map.name)) map.Enable();
-            else map.Disable();
+            if (toEnable.Contains(map.name))
+            {
+                map.Enable();
+            }
+            else
+            {
+                map.Disable();
+            }
         }
     }
 
     public Vector2 MoveInput => ReadVector2("Move");
     public Vector2 MouseInput => ReadVector2("Point");
     public bool BackPressed => WasTriggered("Back");
+    public bool PausePressed => WasTriggered("Pause");
     public bool ConfirmPressed => WasTriggered("Confirm");
 
     public InputAction GetAction(string name)
@@ -215,6 +222,13 @@ public class Inputs : MonoBehaviour
     }
 
     public Vector2 ReadVector2(string name) => GetAction(name)?.ReadValue<Vector2>() ?? Vector2.zero;
-    public bool WasTriggered(string name) => GetAction(name)?.triggered ?? false;
+    
+    public bool WasTriggered(string name)
+    {
+        var action = GetAction(name);
+        bool triggered = action?.triggered ?? false;
+        if (triggered) Debug.Log($"[Inputs] Action TRIGGERED: {name}");
+        return triggered;
+    }
     public bool IsPressed(string name) => GetAction(name)?.IsPressed() ?? false;
 }

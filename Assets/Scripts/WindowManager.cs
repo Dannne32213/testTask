@@ -90,6 +90,8 @@ public class WindowManager : MonoBehaviour
     private void Update()
     {
         if (Inputs.Instance == null) return;
+
+        if (Inputs.Instance.JustSwitched) return;
         
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {

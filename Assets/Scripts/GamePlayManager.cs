@@ -54,13 +54,18 @@ public class GamePlayManager : MonoBehaviour
     private void Update()
     {
         if (Inputs.Instance == null) return;
+
+        if (Inputs.Instance.JustSwitched)
+        {
+            return;
+        }
         
+        // 1. GESTIONARE PAUZĂ
         if (_canCheckPause && Inputs.Instance.PausePressed)
         {
             var top = WindowManager.Instance != null ? WindowManager.Instance.GetTopWindow() : null;
             if (pauseWindow != null && WindowManager.Instance != null && top != pauseWindow)
             {
-                Debug.Log("[GamePlayManager] Deschidere Pauză.");
                 WindowManager.Instance.OpenWindow(pauseWindow);
                 Time.timeScale = 0;
                 return; 
@@ -158,7 +163,7 @@ public class GamePlayManager : MonoBehaviour
 
     public void MainMenu()
     {
-        Time.timeScale = 1;
+        Time.timeScale = 1; 
         SceneManager.LoadScene("WindowScene");
     }
 

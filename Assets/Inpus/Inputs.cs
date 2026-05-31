@@ -21,18 +21,19 @@ public class Inputs : MonoBehaviour
 {
     public static Inputs Instance { get; private set; }
 
-    [Header("Settings")]
-    [SerializeField] private InputActionAsset inputActionAsset;
+    [Header("Settings")] [SerializeField] private InputActionAsset inputActionAsset;
     [SerializeField] private bool showDebugOverlay = true;
 
     public event Action<ControlScheme> OnSchemeChanged;
     public ControlScheme CurrentScheme { get; private set; } = ControlScheme.PC;
 
+    public bool JustSwitched { get; private set; }
+    private int _lastSwitchFrame = -1;
+
     private List<InputMapContext> _activeMaps = new List<InputMapContext>();
 
     private void Awake()
     {
-        
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -42,18 +43,14 @@ public class Inputs : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        if (inputActionAsset == null)
-        {
-            return;
-        }
-        
+        if (inputActionAsset == null) return;
+
         foreach (var map in inputActionAsset.actionMaps)
         {
             map.actionTriggered += OnActionTriggered;
         }
 
         ApplyCursorStateForScheme();
-        
         EnableMap("UI", 0);
     }
 
@@ -71,20 +68,37 @@ public class Inputs : MonoBehaviour
     private float _lastSwitchTime = 0f;
     private const float SwitchCooldown = 0.5f;
 
+    private void Update()
+    {
+    }
+
+    private void LateUpdate()
+    {
+        if (JustSwitched && Time.frameCount != _lastSwitchFrame)
+        {
+            JustSwitched = false;
+        }
+    }
+
     private void OnActionTriggered(InputAction.CallbackContext context)
     {
         if (context.action == null || context.control == null) return;
-        
+
+        // Resetăm JustSwitched dacă am trecut la un alt frame
+        if (Time.frameCount != _lastSwitchFrame) JustSwitched = false;
+
         if (Time.unscaledTime - _lastSwitchTime < SwitchCooldown) return;
-        
+
+        // Filtrăm fazele: ne interesează doar când o acțiune a început sau a fost executată
         if (!context.started && !context.performed) return;
 
         InputDevice device = context.control.device;
         bool isGamepad = device is Gamepad;
         bool isPC = device is Keyboard || device is Mouse;
-        
+
         if (isGamepad)
         {
+            // Verificăm dacă este o mișcare analogică
             if (context.action.type == InputActionType.Value)
             {
                 var value = context.ReadValueAsObject();
@@ -92,23 +106,23 @@ public class Inputs : MonoBehaviour
                 if (value is Vector2 v) magnitude = v.magnitude;
                 else if (value is float f) magnitude = Mathf.Abs(f);
 
-                if (magnitude < 0.25f) return; // Prag ridicat pentru a ignora stick drift
+                if (magnitude < 0.25f) return;
             }
 
             if (CurrentScheme != ControlScheme.Console)
             {
                 SwitchScheme(ControlScheme.Console);
                 _lastSwitchTime = Time.unscaledTime;
+                _lastSwitchFrame = Time.frameCount;
+                JustSwitched = true;
             }
         }
         else if (isPC)
         {
-            
             if (context.action.name == "Point") return;
 
             if (context.action.name == "Move" && device is Mouse)
             {
-                // Verificăm dacă mouse-ul s-a mișcat efectiv
                 if (Mouse.current.delta.ReadValue().magnitude < 2.0f) return;
             }
 
@@ -116,29 +130,48 @@ public class Inputs : MonoBehaviour
             {
                 SwitchScheme(ControlScheme.PC);
                 _lastSwitchTime = Time.unscaledTime;
+                _lastSwitchFrame = Time.frameCount;
+                JustSwitched = true;
             }
         }
     }
+
 
     private void SwitchScheme(ControlScheme newScheme)
     {
         CurrentScheme = newScheme;
         ApplyCursorStateForScheme();
         
+        // --- BLOCARE CLICK DE ACTIVARE ---
+        // Dacă am schimbat schema (JustSwitched), dezactivăm temporar EventSystem
+        // pentru a preveni ca primul click să activeze un buton de UI în același frame.
+        if (JustSwitched && UnityEngine.EventSystems.EventSystem.current != null)
+        {
+            var eventSystem = UnityEngine.EventSystems.EventSystem.current;
+            eventSystem.enabled = false;
+            // Îl reactivăm imediat în frame-ul următor
+            StartCoroutine(ReEnableEventSystem(eventSystem));
+        }
+
         if (newScheme == ControlScheme.Console)
         {
             RestoreUISelection();
         }
 
         OnSchemeChanged?.Invoke(CurrentScheme);
+        Debug.LogWarning($"[Inputs] SWITCHED SCHEME TO: {CurrentScheme} (Interaction blocked for activation frame)");
+    }
+
+    private System.Collections.IEnumerator ReEnableEventSystem(UnityEngine.EventSystems.EventSystem es)
+    {
+        yield return null; // Așteptăm un frame
+        if (es != null) es.enabled = true;
     }
 
     private void RestoreUISelection()
     {
         if (UnityEngine.EventSystems.EventSystem.current == null) return;
-
         var eventSystem = UnityEngine.EventSystems.EventSystem.current;
-        
         if (eventSystem.currentSelectedGameObject == null)
         {
             if (WindowManager.Instance != null)
@@ -164,34 +197,22 @@ public class Inputs : MonoBehaviour
 
     private void OnGUI()
     {
-        // FORCE DRAWING REGARDLESS OF SETTINGS FOR DEBUGGING
         GUI.depth = -2000;
-        
         Rect areaRect = new Rect(10, 10, 500, 250);
-        GUI.Box(areaRect, ""); // Shadow/Background
+        GUI.Box(areaRect, "");
         GUI.Box(areaRect, "<b><size=18><color=yellow> INPUT SYSTEM DEBUG (v2) </color></size></b>");
-
         GUILayout.BeginArea(new Rect(20, 40, 480, 200));
-        
         GUILayout.Space(10);
         string schemeColor = CurrentScheme == ControlScheme.PC ? "lime" : "cyan";
         GUILayout.Label($"<b><size=22>CURRENT SCHEME: <color={schemeColor}>{CurrentScheme.ToString().ToUpper()}</color></size></b>");
-        
         GUILayout.Space(5);
         GUILayout.Label($"<size=16>Cursor: {(Cursor.visible ? "Visible" : "Hidden")} | Locked: {Cursor.lockState}</size>");
-        GUILayout.Label($"<size=16>Blocked Input: <color=orange>{(CurrentScheme == ControlScheme.PC ? "Gamepad" : "Keyboard/Mouse")}</color></size>");
-
         if (_activeMaps.Count > 0)
         {
             int maxPrio = _activeMaps.Max(m => m.Priority);
             var active = _activeMaps.Find(m => m.Priority == maxPrio);
             GUILayout.Label($"<size=16>Active Map: <color=white>{active?.MapName}</color> (Prio: {active?.Priority})</size>");
         }
-        else
-        {
-            GUILayout.Label("<color=red>NO ACTIVE MAPS!</color>");
-        }
-
         GUILayout.EndArea();
     }
 
@@ -218,26 +239,17 @@ public class Inputs : MonoBehaviour
     private void EvaluateActiveMaps()
     {
         if (inputActionAsset == null) return;
-        
         if (_activeMaps.Count == 0)
         {
             foreach (var map in inputActionAsset.actionMaps) map.Disable();
             return;
         }
-
         int maxPrio = _activeMaps.Max(m => m.Priority);
         var toEnable = _activeMaps.Where(m => m.Priority == maxPrio).Select(m => m.MapName).ToList();
-
         foreach (var map in inputActionAsset.actionMaps)
         {
-            if (toEnable.Contains(map.name))
-            {
-                map.Enable();
-            }
-            else
-            {
-                map.Disable();
-            }
+            if (toEnable.Contains(map.name)) map.Enable();
+            else map.Disable();
         }
     }
 
@@ -250,7 +262,6 @@ public class Inputs : MonoBehaviour
     public InputAction GetAction(string name)
     {
         if (inputActionAsset == null) return null;
-
         foreach (var map in inputActionAsset.actionMaps)
         {
             if (map.enabled)
@@ -267,8 +278,7 @@ public class Inputs : MonoBehaviour
     public bool WasTriggered(string name)
     {
         var action = GetAction(name);
-        bool triggered = action?.triggered ?? false;
-        return triggered;
+        return action?.triggered ?? false;
     }
     public bool IsPressed(string name) => GetAction(name)?.IsPressed() ?? false;
 }

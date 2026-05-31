@@ -17,7 +17,7 @@ public static class SaveSystem
 
     public static bool HasSave()
     {
-        if (!PlayerPrefs.HasKey(savePath)) return false;
+        if (!SwitchPrefs.HasKey(savePath)) return false;
         
         if (playerData == null) LoadData();
         
@@ -28,8 +28,8 @@ public static class SaveSystem
     {
         if (playerData == null) return;
         string json = JsonUtility.ToJson(playerData);
-        PlayerPrefs.SetString(savePath, EncryptDecrypt(json));
-        PlayerPrefs.Save();
+        SwitchPrefs.SetString(savePath, EncryptDecrypt(json));
+        SwitchPrefs.Save();
         Debug.Log("Saved Data");
     }
     
@@ -39,11 +39,11 @@ public static class SaveSystem
 
         playerData = new PlayerData();
 
-        if (PlayerPrefs.HasKey(savePath))
+        if (SwitchPrefs.HasKey(savePath))
         {
             try
             {
-                string json = PlayerPrefs.GetString(savePath);
+                string json = SwitchPrefs.GetString(savePath);
                 playerData = JsonUtility.FromJson<PlayerData>(EncryptDecrypt(json));
             }
             catch
@@ -79,7 +79,7 @@ public static class SaveSystem
         playerData.masterVolume = currentVol;
         playerData.hasPlayData = false; 
 
-        PlayerPrefs.DeleteKey(savePath);
+        SwitchPrefs.DeleteKey(savePath);
         SaveData();
         Debug.Log("<color=red>New save created.</color>");
         return playerData;

@@ -158,12 +158,14 @@ public class GamePlayManager : MonoBehaviour
     public void Unpause()
     {
         WindowManager.Instance.CloseTopWindow();
+        SaveGameData();
         Time.timeScale = 1;
     }
 
     public void MainMenu()
     {
-        Time.timeScale = 1; 
+        Time.timeScale = 1;
+        SaveGameData();
         SceneManager.LoadScene("WindowScene");
     }
 
@@ -174,6 +176,7 @@ public class GamePlayManager : MonoBehaviour
     
     public void CloseWindow()
     {
+        SaveGameData();
         WindowManager.Instance.CloseTopWindow();
     }
     

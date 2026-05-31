@@ -10,20 +10,23 @@ using Random = UnityEngine.Random;
 public static class SaveSystem
 {
     public static bool savesLoaded;
-
     public static PlayerData playerData;
 
     static string savePath = "save.SaveData";
-
     static int key = 5;
 
     public static bool HasSave()
     {
-        return PlayerPrefs.HasKey(savePath);
+        if (!PlayerPrefs.HasKey(savePath)) return false;
+        
+        if (playerData == null) LoadData();
+        
+        return playerData != null && playerData.hasPlayData;
     }
     
     public static void SaveData()
     {
+        if (playerData == null) return;
         string json = JsonUtility.ToJson(playerData);
         PlayerPrefs.SetString(savePath, EncryptDecrypt(json));
         PlayerPrefs.Save();
@@ -32,9 +35,9 @@ public static class SaveSystem
     
     public static PlayerData LoadData()
     {
-        playerData = new PlayerData();
+        if (savesLoaded && playerData != null) return playerData;
 
-        bool newSave = false;
+        playerData = new PlayerData();
 
         if (PlayerPrefs.HasKey(savePath))
         {
@@ -45,30 +48,20 @@ public static class SaveSystem
             }
             catch
             {
-                newSave = true;
+                playerData = new PlayerData();
             }
-        }
-        else
-        {
-            newSave = true;
         }
 
         InitAchievementsList();
-        if (newSave)
-        {
-            SaveData();
-        }
-
-        if (playerData == null)
-        {
-            MakeNewSave();
-        }
         savesLoaded = true;
 
         return playerData;
     }
+
     private static void InitAchievementsList()
     {
+        if (playerData.achievements == null) playerData.achievements = new List<AchievementStatus>();
+        
         for (int i = 0; i < Enum.GetValues(typeof(ETrophey)).Length; i++)
         {
             if (playerData.achievements.Count < i)
@@ -77,29 +70,21 @@ public static class SaveSystem
             }
         }
     }
+
     public static PlayerData MakeNewSave()
     {
-        if (playerData != null)
-        {
-            PlayerData tempData = playerData;
-            playerData = new PlayerData();
-            
-            if (!playerData.newGameDone)
-            {
-                playerData.score = tempData.score;
-                playerData.playerColor = tempData.playerColor;
-            }
-        }
-        else
-        {
-            playerData = new PlayerData();
-        }
+        float currentVol = playerData != null ? playerData.masterVolume : 1.0f;
+
+        playerData = new PlayerData();
+        playerData.masterVolume = currentVol;
+        playerData.hasPlayData = false; 
 
         PlayerPrefs.DeleteKey(savePath);
         SaveData();
-        Debug.Log("<color=red>Nu sunt Save-uri.</color>");
+        Debug.Log("<color=red>New save created.</color>");
         return playerData;
     }
+
     private static string EncryptDecrypt(string textToEncrypt)
     {
         StringBuilder inSb = new StringBuilder(textToEncrypt);
@@ -147,13 +132,14 @@ public static class SaveSystem
 [System.Serializable]
 public class PlayerData
 {
+    public bool hasPlayData; 
     public bool newGameDone;
-    public Color playerColor;
+    public Color playerColor = Color.white;
     public int score;
     public float masterVolume = 1.0f;
     public List<AchievementStatus> achievements = new List<AchievementStatus>();
-    
 }
+
 [Serializable]
 public class AchievementStatus
 {
@@ -167,7 +153,5 @@ public class AchievementStatus
         progressValue = f;
     }
 }
-public enum ETrophey
-{
-    
-}
+
+public enum ETrophey { }

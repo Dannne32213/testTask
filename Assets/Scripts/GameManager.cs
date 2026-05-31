@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+
 public class GameManager : MonoBehaviour
 {
     [SerializeField] private Button continueButton;
@@ -36,23 +37,23 @@ public class GameManager : MonoBehaviour
             SaveSystem.playerData.masterVolume = volume;
         }
     }
-public void ExitGame()
-{
-    SaveSystem.SaveData();
 
-    Application.Quit();
-    Debug.Log("Game Exited");
+    public void ExitGame()
+    {
+        SaveSystem.SaveData();
 
-    #if UNITY_EDITOR
-    UnityEditor.EditorApplication.isPlaying = false;
-    #endif
-}
+        Application.Quit();
+        Debug.Log("Game Exited");
 
-private void OnApplicationQuit()
-{
-    SaveSystem.SaveData();
-}
+        #if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+        #endif
+    }
 
+    private void OnApplicationQuit()
+    {
+        SaveSystem.SaveData();
+    }
 
     public void StartNewGame()
     {
@@ -75,18 +76,22 @@ private void OnApplicationQuit()
     
     public void ConfirmStartNewGame()
     {
+        float currentMenuVolume = AudioListener.volume;
+
         SaveSystem.MakeNewSave();
+        
+        SaveSystem.playerData.masterVolume = currentMenuVolume;
+        SaveSystem.SaveData();
+
         SceneManager.LoadScene("GamePlay");
     }
 
     public void LoadGame()
     {
-        SaveSystem.LoadData();
-        SceneManager.LoadScene("GamePlay");
-    }
-
-    public void SoundSave()
-    {
+        SaveSystem.SaveData();
         
+        SaveSystem.LoadData();
+        
+        SceneManager.LoadScene("GamePlay");
     }
 }

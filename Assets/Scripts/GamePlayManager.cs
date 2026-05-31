@@ -1,6 +1,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class GamePlayManager : MonoBehaviour
 {
@@ -8,6 +11,7 @@ public class GamePlayManager : MonoBehaviour
     [SerializeField] private MeshRenderer targetObject;
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private WindowBase pauseWindow;
+    [SerializeField] private Slider volumeSlider;
     
     private int _currentScore = 0;
 
@@ -21,6 +25,13 @@ public class GamePlayManager : MonoBehaviour
             Inputs.Instance.EnableMap("Pausepressed", 10);
         }
 
+        if (volumeSlider != null)
+        {
+            float savedVol = SaveSystem.playerData != null ? SaveSystem.playerData.masterVolume : 1f;
+            volumeSlider.value = savedVol;
+            volumeSlider.onValueChanged.AddListener(SetVolume);
+        }
+
         _canCheckPause = false;
         if (pauseWindow != null) pauseWindow.gameObject.SetActive(false);
         Invoke(nameof(EnablePauseCheck), 0.1f);
@@ -29,23 +40,37 @@ public class GamePlayManager : MonoBehaviour
     private bool _canCheckPause = false;
     private void EnablePauseCheck() => _canCheckPause = true;
 
+    public void SetVolume(float volume)
+    {
+        AudioListener.volume = volume;
+        if (SaveSystem.playerData != null)
+        {
+            SaveSystem.playerData.masterVolume = volume;
+        }
+    }
+
     private void Update()
     {
         if (Inputs.Instance == null) return;
-
+        
         if (_canCheckPause && Inputs.Instance.PausePressed)
         {
             if (pauseWindow != null && WindowManager.Instance != null && WindowManager.Instance.GetTopWindow() == null)
             {
                 Debug.Log("[GamePlayManager] Pauză activată.");
                 WindowManager.Instance.OpenWindow(pauseWindow);
+                Time.timeScale = 0;
                 return; 
             }
         }
         
+        if (WindowManager.Instance != null && WindowManager.Instance.GetTopWindow() != null)
+        {
+            return;
+        }
+        
         bool actionTriggered = false;
         
-        // Verificăm butoanele generale (Enter, Space, Gamepad South)
         if (Keyboard.current != null && (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame))
         {
             actionTriggered = true;
@@ -55,9 +80,13 @@ public class GamePlayManager : MonoBehaviour
             actionTriggered = true;
         }
         
-        // Verificăm Click-ul de Mouse cu Raycast
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+
             if (Camera.main != null)
             {
                 Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
@@ -100,12 +129,6 @@ public class GamePlayManager : MonoBehaviour
         targetObject.material.color = newColor;
     }
 
-    public void Unpase()
-    {
-        WindowManager.Instance.CloseTopWindow();
-        Time.timeScale = 1;
-    }
-
     public void SaveGameData()
     {
         if (SaveSystem.playerData == null)
@@ -113,6 +136,7 @@ public class GamePlayManager : MonoBehaviour
             SaveSystem.playerData = new PlayerData();
         }
 
+        SaveSystem.playerData.hasPlayData = true; 
         SaveSystem.playerData.score = _currentScore;
         SaveSystem.playerData.playerColor = targetObject != null ? targetObject.material.color : Color.white;
 
@@ -120,9 +144,29 @@ public class GamePlayManager : MonoBehaviour
         Debug.Log("[GamePlayManager] Save.");
     }
 
+    public void Unpause()
+    {
+        WindowManager.Instance.CloseTopWindow();
+        Time.timeScale = 1;
+    }
+
+    public void MainMenu()
+    {
+        SceneManager.LoadScene("WindowScene");
+    }
+
+    public void Settings(WindowBase newWindow)
+    {
+        WindowManager.Instance.OpenWindow(newWindow);
+    }
+    
+    public void CloseWindow()
+    {
+        WindowManager.Instance.CloseTopWindow();
+    }
+    
     private void LoadGameData()
     {
-        // Apelăm LoadData din SaveSystem
         PlayerData data = SaveSystem.LoadData();
         
         if (data != null)
@@ -134,12 +178,10 @@ public class GamePlayManager : MonoBehaviour
                 targetObject.material.color = data.playerColor;
             }
 
-            // Aplicăm volumul salvat
             AudioListener.volume = data.masterVolume;
         }
 
         UpdateScoreUI();
-        Debug.Log($"[GamePlayManager] Load Score: {_currentScore} | Volume: {AudioListener.volume}");
     }
 
     private void OnApplicationQuit()

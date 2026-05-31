@@ -2,9 +2,17 @@ using UnityEngine;
 
 public class SoundBackground : MonoBehaviour
 {
-    void Start()
+    public static SoundBackground Instance { get; private set; }
+
+    private void Awake()
     {
-        DontDestroyOnLoad(this);
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
-    
 }

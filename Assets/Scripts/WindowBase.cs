@@ -61,13 +61,18 @@ public class WindowBase : MonoBehaviour
     private void Update()
     {
         if (EventSystem.current == null) return;
-        
+
+        if (WindowManager.Instance != null && WindowManager.Instance.GetTopWindow() != this)
+        {
+            return;
+        }
+
         GameObject current = EventSystem.current.currentSelectedGameObject;
         if (current != null && current.transform.IsChildOf(this.transform))
         {
             _lastSelected = current;
         }
-        
+
         if (Inputs.Instance != null && Inputs.Instance.CurrentScheme == ControlScheme.PC)
         {
             Vector2 mousePos = Vector2.zero;

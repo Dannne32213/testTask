@@ -14,7 +14,33 @@ public class WindowManager : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Instance.ResetAndOpenDefault(this.defaultWindow);
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
+        transform.SetParent(null); 
+        DontDestroyOnLoad(gameObject);
+        Debug.Log("[WindowManager] Instanță persistentă inițializată.");
+    }
+
+    public void ResetAndOpenDefault(WindowBase wb)
+    {
+        _windowStack.Clear();
+        
+        if (Inputs.Instance != null)
+        {
+            Inputs.Instance.ClearAllActiveMaps();
+        }
+
+        defaultWindow = wb;
+        if (defaultWindow != null)
+        {
+            OpenWindow(defaultWindow);
+        }
     }
 
     private void Start()
@@ -56,6 +82,7 @@ public class WindowManager : MonoBehaviour
         {
             Inputs.Instance.EnableMap("UI", 10);
             Inputs.Instance.DisableMap("Gameplay");
+            Inputs.Instance.DisableMap("Pausepressed");
         }
     }
 
@@ -80,7 +107,7 @@ public class WindowManager : MonoBehaviour
             if (Inputs.Instance != null)
             {
                 Inputs.Instance.DisableMap("UI");
-                Inputs.Instance.EnableMap("Gameplay", 10);
+                Inputs.Instance.EnableMap("Gameplay", 5);
                 Inputs.Instance.EnableMap("Pausepressed", 10);
                 Debug.Log("[WindowManager] Toate ferestrele închise. Re-activăm Gameplay și Pausepressed.");
             }
@@ -108,7 +135,7 @@ public class WindowManager : MonoBehaviour
 
                 foreach (var result in results)
                 {
-                    if (result.gameObject.GetComponent<Selectable>() != null && result.gameObject.transform.IsChildOf(top.transform))
+                    if (result.gameObject.GetComponentInParent<Selectable>() != null && result.gameObject.transform.IsChildOf(top.transform))
                     {
                         if (EventSystem.current.currentSelectedGameObject != result.gameObject)
                         {

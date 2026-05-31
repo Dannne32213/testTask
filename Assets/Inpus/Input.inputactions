@@ -245,7 +245,7 @@
             ]
         },
         {
-            "name": "Player",
+            "name": "Gameplay",
             "id": "cc334957-1bd4-4382-a517-277c05cf934a",
             "actions": [],
             "bindings": []

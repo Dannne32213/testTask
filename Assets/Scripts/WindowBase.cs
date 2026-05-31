@@ -6,7 +6,7 @@ using UnityEngine.UI;
 [RequireComponent(typeof(CanvasGroup))]
 public class WindowBase : MonoBehaviour
 {
-    [SerializeField] private Selectable _firstSelected;
+    [SerializeField] private Selectable _firstSelectedGamepad;
 
     private CanvasGroup _canvasGroup;
     private GameObject _lastSelected;
@@ -28,33 +28,31 @@ public class WindowBase : MonoBehaviour
         if (_canvasGroup != null)
         {
             _canvasGroup.interactable = true;
-            _canvasGroup.blocksRaycasts = true; 
+            _canvasGroup.blocksRaycasts = true;
+        }
     }
 
     private IEnumerator SelectLater()
     {
-        
         yield return null;
 
         if (EventSystem.current == null) yield break;
 
         GameObject objectToSelect = null;
 
-        
         if (_lastSelected != null && _lastSelected.activeInHierarchy)
         {
             objectToSelect = _lastSelected;
         }
-        else if (_firstSelected != null)
+        else if (_firstSelectedGamepad != null)
         {
-            objectToSelect = _firstSelected.gameObject;
+            objectToSelect = _firstSelectedGamepad.gameObject;
         }
 
         if (objectToSelect != null)
         {
             EventSystem.current.SetSelectedGameObject(null);
             EventSystem.current.SetSelectedGameObject(objectToSelect);
-            Debug.Log($"[UI] Focus restored to: {objectToSelect.name} in window: {gameObject.name}");
         }
     }
 
@@ -64,7 +62,6 @@ public class WindowBase : MonoBehaviour
 
         GameObject current = EventSystem.current.currentSelectedGameObject;
 
-       
         if (current != null && current.transform.IsChildOf(this.transform))
         {
             _lastSelected = current;
@@ -81,7 +78,7 @@ public class WindowBase : MonoBehaviour
         if (_canvasGroup != null)
         {
             _canvasGroup.interactable = false;
-            _canvasGroup.blocksRaycasts = false; 
+            _canvasGroup.blocksRaycasts = false;
         }
     }
 }

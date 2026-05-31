@@ -1,25 +1,38 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
+
+public enum ControlScheme
+{
+    PC,
+    Console
+}
+
+public class InputMapContext
+{
+    public string MapName;
+    public int Priority;
+}
 
 public class Inputs : MonoBehaviour
 {
     public static Inputs Instance { get; private set; }
 
+    [Header("Settings")]
     [SerializeField] private InputActionAsset inputActionAsset;
+    [SerializeField] private bool showDebugOverlay = true;
 
-    private InputAction _moveAction;
-    private InputAction _mouseAction;
-    private InputAction _backAction;
-    private InputAction _confirmAction;
+    public event Action<ControlScheme> OnSchemeChanged;
+    public ControlScheme CurrentScheme { get; private set; } = ControlScheme.PC;
 
-    public Vector2 MoveInput => _moveAction?.ReadValue<Vector2>() ?? Vector2.zero;
-    public Vector2 MouseInput => _mouseAction?.ReadValue<Vector2>() ?? Vector2.zero;
-    
-    public bool BackPressed => _backAction?.triggered ?? false;
-    public bool ConfirmPressed => _confirmAction?.triggered ?? false;
+    private List<InputMapContext> _activeMaps = new List<InputMapContext>();
 
     private void Awake()
     {
+        
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -29,26 +42,158 @@ public class Inputs : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        InitializeActions();
+        if (inputActionAsset == null)
+        {
+            return;
+        }
+
+        foreach (var map in inputActionAsset.actionMaps)
+        {
+            map.actionTriggered += OnActionTriggered;
+        }
+
+        ApplyCursorStateForScheme();
+        
+        EnableMap("UI", 0);
     }
 
-    private void InitializeActions()
+    private void OnDestroy()
     {
         if (inputActionAsset != null)
         {
-            var uiMap = inputActionAsset.FindActionMap("UI");
-            if (uiMap != null)
+            foreach (var map in inputActionAsset.actionMaps)
             {
-                _moveAction = uiMap.FindAction("Move");
-                _mouseAction = uiMap.FindAction("Mouse");
-                _backAction = uiMap.FindAction("Back");
-                _confirmAction = uiMap.FindAction("Confirm");
-
-                uiMap.Enable();
-               
+                map.actionTriggered -= OnActionTriggered;
             }
-            
         }
-    
     }
+
+    private void OnActionTriggered(InputAction.CallbackContext context)
+    {
+        if (context.action == null || context.control == null) return;
+
+        InputDevice device = context.control.device;
+        bool isGamepad = device is Gamepad;
+        bool isPC = device is Keyboard || device is Mouse;
+
+        if (isGamepad && CurrentScheme != ControlScheme.Console)
+        {
+            SwitchScheme(ControlScheme.Console);
+        }
+        else if (isPC && CurrentScheme != ControlScheme.PC)
+        {
+            SwitchScheme(ControlScheme.PC);
+        }
+    }
+
+    private void SwitchScheme(ControlScheme newScheme)
+    {
+        CurrentScheme = newScheme;
+        ApplyCursorStateForScheme();
+        OnSchemeChanged?.Invoke(CurrentScheme);
+    }
+
+    private void ApplyCursorStateForScheme()
+    {
+        if (CurrentScheme == ControlScheme.PC)
+        {
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+        }
+        else
+        {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+    }
+
+    private void OnGUI()
+    {
+        GUI.depth = -2000;
+        
+        Rect areaRect = new Rect(10, 10, 500, 250);
+        GUI.Box(areaRect, ""); // Shadow/Background
+        GUI.Box(areaRect, "<b><size=18><color=yellow> INPUT SYSTEM DEBUG (v2) </color></size></b>");
+
+        GUILayout.BeginArea(new Rect(20, 40, 480, 200));
+        
+        GUILayout.Space(10);
+        string schemeColor = CurrentScheme == ControlScheme.PC ? "lime" : "cyan";
+        GUILayout.Label($"<b><size=22>CURRENT SCHEME: <color={schemeColor}>{CurrentScheme.ToString().ToUpper()}</color></size></b>");
+        
+        GUILayout.Space(5);
+        GUILayout.Label($"<size=16>Cursor: {(Cursor.visible ? "Visible" : "Hidden")} | Locked: {Cursor.lockState}</size>");
+        GUILayout.Label($"<size=16>Blocked Input: <color=orange>{(CurrentScheme == ControlScheme.PC ? "Gamepad" : "Keyboard/Mouse")}</color></size>");
+
+        if (_activeMaps.Count > 0)
+        {
+            int maxPrio = _activeMaps.Max(m => m.Priority);
+            var active = _activeMaps.Find(m => m.Priority == maxPrio);
+            GUILayout.Label($"<size=16>Active Map: <color=white>{active?.MapName}</color> (Prio: {active?.Priority})</size>");
+        }
+        else
+        {
+            GUILayout.Label("<color=red>NO ACTIVE MAPS!</color>");
+        }
+
+        GUILayout.EndArea();
+    }
+
+    public void EnableMap(string mapName, int priority)
+    {
+        var existing = _activeMaps.FirstOrDefault(m => m.MapName == mapName);
+        if (existing != null) existing.Priority = priority;
+        else _activeMaps.Add(new InputMapContext { MapName = mapName, Priority = priority });
+        EvaluateActiveMaps();
+    }
+
+    public void DisableMap(string mapName)
+    {
+        _activeMaps.RemoveAll(m => m.MapName == mapName);
+        EvaluateActiveMaps();
+    }
+
+    private void EvaluateActiveMaps()
+    {
+        if (inputActionAsset == null) return;
+        
+        if (_activeMaps.Count == 0)
+        {
+            foreach (var map in inputActionAsset.actionMaps) map.Disable();
+            return;
+        }
+
+        int maxPrio = _activeMaps.Max(m => m.Priority);
+        var toEnable = _activeMaps.Where(m => m.Priority == maxPrio).Select(m => m.MapName).ToList();
+
+        foreach (var map in inputActionAsset.actionMaps)
+        {
+            if (toEnable.Contains(map.name)) map.Enable();
+            else map.Disable();
+        }
+    }
+
+    public Vector2 MoveInput => ReadVector2("Move");
+    public Vector2 MouseInput => ReadVector2("Point");
+    public bool BackPressed => WasTriggered("Back");
+    public bool ConfirmPressed => WasTriggered("Confirm");
+
+    public InputAction GetAction(string name)
+    {
+        if (inputActionAsset == null) return null;
+
+        foreach (var map in inputActionAsset.actionMaps)
+        {
+            if (map.enabled)
+            {
+                var action = map.FindAction(name);
+                if (action != null) return action;
+            }
+        }
+        return null;
+    }
+
+    public Vector2 ReadVector2(string name) => GetAction(name)?.ReadValue<Vector2>() ?? Vector2.zero;
+    public bool WasTriggered(string name) => GetAction(name)?.triggered ?? false;
+    public bool IsPressed(string name) => GetAction(name)?.IsPressed() ?? false;
 }

@@ -1,28 +1,21 @@
+using System;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    private void Update()
+    public void ExitGame()
+    {
+        Application.Quit();
+        Debug.Log("Game Exited");
+    }
+
+    public void StartNewGame()
     {
         
-        if (Inputs.Instance != null)
-        {
-            if (Inputs.Instance.ConfirmPressed)
-            {
-                
-                Debug.Log("Confirm action triggered!");
-            }
+    }
 
-            if (Inputs.Instance.BackPressed)
-            {
-                Debug.Log("Back action triggered!");
-            }
-
-            Vector2 move = Inputs.Instance.MoveInput;
-            if (move != Vector2.zero)
-            {
-                
-            }
-        }
+    public void LoadGame()
+    {
+        
     }
 }

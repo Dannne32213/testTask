@@ -1,6 +1,8 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(CanvasGroup))]
@@ -61,10 +63,40 @@ public class WindowBase : MonoBehaviour
         if (EventSystem.current == null) return;
 
         GameObject current = EventSystem.current.currentSelectedGameObject;
-
         if (current != null && current.transform.IsChildOf(this.transform))
         {
             _lastSelected = current;
+        }
+
+        if (Inputs.Instance != null && Inputs.Instance.CurrentScheme == ControlScheme.PC)
+        {
+            Vector2 mousePos = Vector2.zero;
+            if (Mouse.current != null)
+            {
+                mousePos = Mouse.current.position.ReadValue();
+            }
+
+            PointerEventData pointerData = new PointerEventData(EventSystem.current)
+            {
+                position = mousePos
+            };
+
+            List<RaycastResult> results = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(pointerData, results);
+
+            foreach (var result in results)
+            {
+                Selectable selectable = result.gameObject.GetComponent<Selectable>();
+                if (selectable != null && selectable.interactable && result.gameObject.transform.IsChildOf(this.transform))
+                {
+                    if (EventSystem.current.currentSelectedGameObject != result.gameObject)
+                    {
+                        EventSystem.current.SetSelectedGameObject(result.gameObject);
+                        _lastSelected = result.gameObject;
+                    }
+                    break;
+                }
+            }
         }
     }
 

@@ -9,8 +9,8 @@ public class WindowManager : MonoBehaviour
     public static WindowManager Instance { get; private set; }
 
     [SerializeField] private WindowBase defaultWindow;
-
-    [SerializeField] private Stack<WindowBase> _windowStack = new Stack<WindowBase>();
+    
+    [SerializeField] private List<WindowBase> _windowStack = new List<WindowBase>();
 
     private void Awake()
     {
@@ -32,14 +32,15 @@ public class WindowManager : MonoBehaviour
 
     public WindowBase GetTopWindow()
     {
-        return _windowStack.Count > 0 ? _windowStack.Peek() : null;
+        return _windowStack.Count > 0 ? _windowStack[_windowStack.Count - 1] : null;
     }
 
     public void RestoreSelection()
     {
-        if (_windowStack.Count > 0)
+        WindowBase top = GetTopWindow();
+        if (top != null)
         {
-            _windowStack.Peek().RestoreFocus();
+            top.RestoreFocus();
         }
     }
 
@@ -47,15 +48,15 @@ public class WindowManager : MonoBehaviour
     {
         if (newWindow == null) return;
         
-        if (_windowStack.Count > 0)
+        WindowBase currentTop = GetTopWindow();
+        if (currentTop != null)
         {
-            WindowBase currentTop = _windowStack.Peek();
-            currentTop.Freeze(); 
+            currentTop.Freeze();
         }
         
-        _windowStack.Push(newWindow);
+        _windowStack.Add(newWindow);
         newWindow.Show();
-
+        
         if (Inputs.Instance != null)
         {
             Inputs.Instance.EnableMap("UI", 10);
@@ -67,14 +68,17 @@ public class WindowManager : MonoBehaviour
     {
         if (_windowStack.Count <= 0) return;
 
-        WindowBase topWindow = _windowStack.Pop();
+        int lastIndex = _windowStack.Count - 1;
+        WindowBase topWindow = _windowStack[lastIndex];
+        _windowStack.RemoveAt(lastIndex);
+        
         topWindow.Hide();
 
-        if (_windowStack.Count > 0)
+        WindowBase newTop = GetTopWindow();
+        if (newTop != null)
         {
-            WindowBase previousWindow = _windowStack.Peek();
-            previousWindow.Show(); 
-            previousWindow.RestoreFocus();
+            newTop.Show(); 
+            newTop.RestoreFocus();
         }
         else
         {
@@ -89,55 +93,34 @@ public class WindowManager : MonoBehaviour
     private void Update()
     {
         if (Inputs.Instance == null) return;
-
-        if (Inputs.Instance.ConfirmPressed)
+        
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
         {
-            if (_windowStack.Count > 0)
+            WindowBase top = GetTopWindow();
+            if (top != null)
             {
-                GameObject targetObject = null;
-
-                if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+                PointerEventData pointerData = new PointerEventData(EventSystem.current)
                 {
-                    PointerEventData pointerData = new PointerEventData(EventSystem.current)
-                    {
-                        position = Mouse.current.position.ReadValue()
-                    };
+                    position = Mouse.current.position.ReadValue()
+                };
 
-                    List<RaycastResult> results = new List<RaycastResult>();
-                    EventSystem.current.RaycastAll(pointerData, results);
+                List<RaycastResult> results = new List<RaycastResult>();
+                EventSystem.current.RaycastAll(pointerData, results);
 
-                    foreach (var result in results)
+                foreach (var result in results)
+                {
+                    if (result.gameObject.GetComponent<Selectable>() != null && result.gameObject.transform.IsChildOf(top.transform))
                     {
-                        if (result.gameObject.GetComponent<Selectable>() != null && result.gameObject.transform.IsChildOf(_windowStack.Peek().transform))
+                        if (EventSystem.current.currentSelectedGameObject != result.gameObject)
                         {
-                            targetObject = result.gameObject;
-                            break;
+                            EventSystem.current.SetSelectedGameObject(result.gameObject);
                         }
+                        break;
                     }
-                }
-                else
-                {
-                    targetObject = EventSystem.current.currentSelectedGameObject;
-                }
-                
-                if (targetObject == null)
-                {
-                    _windowStack.Peek().RestoreFocus();
-                    return; 
-                }
-
-                Button btn = targetObject.GetComponent<Button>();
-                if (btn != null && btn.interactable)
-                {
-                    btn.onClick.Invoke();
-                }
-                else
-                {
-                    ExecuteEvents.Execute(targetObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
                 }
             }
         }
-
+        
         if (Inputs.Instance.BackPressed)
         {
             if (_windowStack.Count > 1) 

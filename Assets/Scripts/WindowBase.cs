@@ -91,13 +91,15 @@ public class WindowBase : MonoBehaviour
 
             foreach (var result in results)
             {
-                Selectable selectable = result.gameObject.GetComponent<Selectable>();
-                if (selectable != null && selectable.interactable && result.gameObject.transform.IsChildOf(this.transform))
+                Selectable selectable = result.gameObject.GetComponentInParent<Selectable>();
+                if (selectable != null && selectable.interactable && selectable.transform.IsChildOf(this.transform))
                 {
-                    if (EventSystem.current.currentSelectedGameObject != result.gameObject)
+                    GameObject target = selectable.gameObject;
+                    if (EventSystem.current.currentSelectedGameObject != target)
                     {
-                        EventSystem.current.SetSelectedGameObject(result.gameObject);
-                        _lastSelected = result.gameObject;
+                        EventSystem.current.SetSelectedGameObject(target);
+                        _lastSelected = target;
+                        Debug.Log($"[WindowBase] Mouse hover auto-selected: {target.name}");
                     }
                     break;
                 }

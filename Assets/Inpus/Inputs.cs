@@ -68,21 +68,53 @@ public class Inputs : MonoBehaviour
         }
     }
 
+    private float _lastSwitchTime = 0f;
+    private const float SwitchCooldown = 0.5f;
+
     private void OnActionTriggered(InputAction.CallbackContext context)
     {
         if (context.action == null || context.control == null) return;
+        
+        if (Time.unscaledTime - _lastSwitchTime < SwitchCooldown) return;
+
+        if (!context.started && !context.performed) return;
 
         InputDevice device = context.control.device;
         bool isGamepad = device is Gamepad;
         bool isPC = device is Keyboard || device is Mouse;
 
-        if (isGamepad && CurrentScheme != ControlScheme.Console)
+        if (isGamepad)
         {
-            SwitchScheme(ControlScheme.Console);
+            if (context.action.type == InputActionType.Value)
+            {
+                var value = context.ReadValueAsObject();
+                float magnitude = 0f;
+                if (value is Vector2 v) magnitude = v.magnitude;
+                else if (value is float f) magnitude = Mathf.Abs(f);
+
+                if (magnitude < 0.25f) return;
+            }
+
+            if (CurrentScheme != ControlScheme.Console)
+            {
+                SwitchScheme(ControlScheme.Console);
+                _lastSwitchTime = Time.unscaledTime;
+            }
         }
-        else if (isPC && CurrentScheme != ControlScheme.PC)
+        else if (isPC)
         {
-            SwitchScheme(ControlScheme.PC);
+            if (context.action.name == "Point") return;
+
+            if (context.action.name == "Move" && device is Mouse)
+            {
+                if (Mouse.current.delta.ReadValue().magnitude < 2.0f) return;
+            }
+
+            if (CurrentScheme != ControlScheme.PC)
+            {
+                SwitchScheme(ControlScheme.PC);
+                _lastSwitchTime = Time.unscaledTime;
+            }
         }
     }
 

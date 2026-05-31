@@ -90,7 +90,28 @@ public class Inputs : MonoBehaviour
     {
         CurrentScheme = newScheme;
         ApplyCursorStateForScheme();
+
+        if (newScheme == ControlScheme.Console)
+        {
+            RestoreUISelection();
+        }
+
         OnSchemeChanged?.Invoke(CurrentScheme);
+    }
+
+    private void RestoreUISelection()
+    {
+        if (UnityEngine.EventSystems.EventSystem.current == null) return;
+
+        var eventSystem = UnityEngine.EventSystems.EventSystem.current;
+        
+        if (eventSystem.currentSelectedGameObject == null)
+        {
+            if (WindowManager.Instance != null)
+            {
+                WindowManager.Instance.RestoreSelection();
+            }
+        }
     }
 
     private void ApplyCursorStateForScheme()

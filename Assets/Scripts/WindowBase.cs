@@ -81,4 +81,10 @@ public class WindowBase : MonoBehaviour
             _canvasGroup.blocksRaycasts = false;
         }
     }
+
+    public void RestoreFocus()
+    {
+        StopAllCoroutines();
+        StartCoroutine(SelectLater());
+    }
 }

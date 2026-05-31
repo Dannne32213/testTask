@@ -30,6 +30,19 @@ public class WindowManager : MonoBehaviour
         }
     }
 
+    public WindowBase GetTopWindow()
+    {
+        return _windowStack.Count > 0 ? _windowStack.Peek() : null;
+    }
+
+    public void RestoreSelection()
+    {
+        if (_windowStack.Count > 0)
+        {
+            _windowStack.Peek().RestoreFocus();
+        }
+    }
+
     public void OpenWindow(WindowBase newWindow)
     {
         if (newWindow == null) return;

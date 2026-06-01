@@ -1,4 +1,6 @@
 using TMPro;
+
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
@@ -17,6 +19,7 @@ public class GamePlayManager : MonoBehaviour
 
     private void Start()
     {
+        PlatformManager.Service.Presence.SetPresence("Se joacă...");
         LoadGameData();
         
         if (Inputs.Instance != null)
@@ -122,6 +125,15 @@ public class GamePlayManager : MonoBehaviour
     {
         _currentScore++;
         UpdateScoreUI();
+
+        if (_currentScore == 1)
+        {
+            PlatformManager.Service.Achievements.UnlockAchievement("FirstScore");
+        }
+        else if (_currentScore >= 10)
+        {
+            PlatformManager.Service.Achievements.UnlockAchievement("HighScore");
+        }
     }
 
     private void UpdateScoreUI()

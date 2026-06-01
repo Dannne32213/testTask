@@ -17,7 +17,7 @@ public static class SaveSystem
 
     public static bool HasSave()
     {
-        if (!SwitchPrefs.HasKey(savePath)) return false;
+        if (!PlatformManager.Service.Storage.HasKey(savePath)) return false;
         
         if (playerData == null) LoadData();
         
@@ -28,8 +28,8 @@ public static class SaveSystem
     {
         if (playerData == null) return;
         string json = JsonUtility.ToJson(playerData);
-        SwitchPrefs.SetString(savePath, EncryptDecrypt(json));
-        SwitchPrefs.Save();
+        PlatformManager.Service.Storage.SetString(savePath, EncryptDecrypt(json));
+        PlatformManager.Service.Storage.Save();
         Debug.Log("Saved Data");
     }
     
@@ -39,11 +39,11 @@ public static class SaveSystem
 
         playerData = new PlayerData();
 
-        if (SwitchPrefs.HasKey(savePath))
+        if (PlatformManager.Service.Storage.HasKey(savePath))
         {
             try
             {
-                string json = SwitchPrefs.GetString(savePath);
+                string json = PlatformManager.Service.Storage.GetString(savePath);
                 playerData = JsonUtility.FromJson<PlayerData>(EncryptDecrypt(json));
             }
             catch
@@ -79,7 +79,7 @@ public static class SaveSystem
         playerData.masterVolume = currentVol;
         playerData.hasPlayData = false; 
 
-        SwitchPrefs.DeleteKey(savePath);
+        PlatformManager.Service.Storage.DeleteKey(savePath);
         SaveData();
         Debug.Log("<color=red>New save created.</color>");
         return playerData;
@@ -154,4 +154,4 @@ public class AchievementStatus
     }
 }
 
-public enum ETrophey { }
+public enum ETrophey { FirstScore, HighScore, ColorChanger }

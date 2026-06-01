@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        PlatformManager.Service.Presence.SetPresence("În Meniul Principal");
         PlayerData data = SaveSystem.LoadData();
 
         if (continueButton != null)

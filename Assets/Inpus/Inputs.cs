@@ -32,6 +32,8 @@ public class Inputs : MonoBehaviour
 
     private List<InputMapContext> _activeMaps = new List<InputMapContext>();
 
+    public bool IsMouseActive { get; private set; } = true;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -109,6 +111,7 @@ public class Inputs : MonoBehaviour
                 if (magnitude < 0.25f) return;
             }
 
+            IsMouseActive = false;
             if (CurrentScheme != ControlScheme.Console)
             {
                 SwitchScheme(ControlScheme.Console);
@@ -119,18 +122,42 @@ public class Inputs : MonoBehaviour
         }
         else if (isPC)
         {
-            // Verificăm mișcarea mouse-ului (Point sau Look delta)
             if (device is Mouse mouse)
             {
                 if (mouse.delta.ReadValue().magnitude < 0.5f) return;
-            }
+                
+                bool wasMouseActive = IsMouseActive;
+                IsMouseActive = true;
 
-            if (CurrentScheme != ControlScheme.PC)
+                if (CurrentScheme != ControlScheme.PC)
+                {
+                    SwitchScheme(ControlScheme.PC);
+                    _lastSwitchTime = Time.unscaledTime;
+                    _lastSwitchFrame = Time.frameCount;
+                    JustSwitched = true;
+                }
+                else if (!wasMouseActive)
+                {
+                    // Dacă eram pe tastatură și am mișcat mouse-ul, deselectăm pentru a ascunde selectorul
+                    if (UnityEngine.EventSystems.EventSystem.current != null)
+                    {
+                        UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+                    }
+                }
+            }
+            else if (device is Keyboard)
             {
-                SwitchScheme(ControlScheme.PC);
-                _lastSwitchTime = Time.unscaledTime;
-                _lastSwitchFrame = Time.frameCount;
-                JustSwitched = true;
+                IsMouseActive = false;
+                if (CurrentScheme != ControlScheme.PC)
+                {
+                    SwitchScheme(ControlScheme.PC);
+                    _lastSwitchTime = Time.unscaledTime;
+                    _lastSwitchFrame = Time.frameCount;
+                    JustSwitched = true;
+                }
+                
+                // Când apăsăm pe tastatură, activăm selectorul
+                RestoreUISelection();
             }
         }
     }
@@ -157,8 +184,9 @@ public class Inputs : MonoBehaviour
         }
         else
         {
-            // Pe PC, deselectăm totul la început pentru a evita "selecția fantomă" de pe gamepad
-            if (UnityEngine.EventSystems.EventSystem.current != null)
+            // Dacă am trecut pe PC, verificăm dacă e mouse sau tastatură
+            // Dacă e mouse (IsMouseActive e deja setat în OnActionTriggered), deselectăm
+            if (IsMouseActive && UnityEngine.EventSystems.EventSystem.current != null)
             {
                 UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
             }

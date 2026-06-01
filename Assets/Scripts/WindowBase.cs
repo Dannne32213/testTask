@@ -102,7 +102,8 @@ public class WindowBase : MonoBehaviour
 
             // DACĂ MOUSE-UL NU ESTE PESTE NIMIC, DESELECTĂM TOTUL (Specific pentru PC)
             // Asta previne ca un buton să rămână "selectat" vizual dacă mouse-ul a plecat de pe el
-            if (!foundHover && EventSystem.current.currentSelectedGameObject != null)
+            // Facem asta DOAR dacă mouse-ul este dispozitivul activ
+            if (Inputs.Instance.IsMouseActive && !foundHover && EventSystem.current.currentSelectedGameObject != null)
             {
                 EventSystem.current.SetSelectedGameObject(null);
             }

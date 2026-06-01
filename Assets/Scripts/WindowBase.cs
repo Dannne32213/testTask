@@ -34,6 +34,7 @@ public class WindowBase : MonoBehaviour
         }
     }
 
+    //aici ne asiguram ca avem macar ceva selectat cind facem switch intre gamepad/mouse/tastatura
     private IEnumerator SelectLater()
     {
         yield return null;
@@ -62,20 +63,23 @@ public class WindowBase : MonoBehaviour
     {
         if (EventSystem.current == null) return;
 
+        //fereastra currenta, nui da voie la celeante sa fie interectable
         if (WindowManager.Instance != null && WindowManager.Instance.GetTopWindow() != this)
         {
             return;
         }
 
+        //aici alege ultimul button dupa inchiderea ferestrei
         GameObject current = EventSystem.current.currentSelectedGameObject;
         if (current != null && current.transform.IsChildOf(this.transform))
         {
             _lastSelected = current;
         }
 
+        //aici tot ce e legat de mouse, adica tine mouseul deasupra ferestrei daca e pe pc
         if (Inputs.Instance != null && Inputs.Instance.CurrentScheme == ControlScheme.PC)
         {
-            Vector2 mousePos = Vector2.zero;
+            Vector2 mousePos = Vector2.zero; // exact locatia cursorului
             if (Mouse.current != null)
             {
                 mousePos = Mouse.current.position.ReadValue();

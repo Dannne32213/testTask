@@ -232,13 +232,13 @@ public class Inputs : MonoBehaviour
     private void OnGUI()
     {
         GUI.depth = -2000;
-        Rect areaRect = new Rect(10, 10, 300, 150);
+        Rect areaRect = new Rect(10, 10, 300, 180);
         GUI.Box(areaRect, "");
         GUI.Box(areaRect, "<b><size=18><color=yellow> INPUT SYSTEM DEBUG (v2) </color></size></b>");
         GUILayout.BeginArea(new Rect(20, 40, 480, 200));
         GUILayout.Space(10);
         string schemeColor = CurrentScheme == ControlScheme.PC ? "lime" : "cyan";
-        GUILayout.Label($"<b><size=22>CURRENT SCHEME: <color={schemeColor}>{CurrentScheme.ToString().ToUpper()}</color></size></b>");
+        GUILayout.Label($"<b><size=22>CURRENT SCHEME: <color={schemeColor}>\n{CurrentScheme.ToString().ToUpper()}</color></size></b>");
         GUILayout.Space(5);
         GUILayout.Label($"<size=16>Cursor: {(Cursor.visible ? "Visible" : "Hidden")} | Locked: {Cursor.lockState}</size>");
         if (_activeMaps.Count > 0)

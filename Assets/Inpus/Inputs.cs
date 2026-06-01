@@ -89,7 +89,7 @@ public class Inputs : MonoBehaviour
 
         if (Time.unscaledTime - _lastSwitchTime < SwitchCooldown) return;
 
-        // Filtrăm fazele: ne interesează doar când o acțiune a început sau a fost executată
+        // doar când o acțiune a început sau a fost executată
         if (!context.started && !context.performed) return;
 
         InputDevice device = context.control.device;
@@ -119,11 +119,10 @@ public class Inputs : MonoBehaviour
         }
         else if (isPC)
         {
-            if (context.action.name == "Point") return;
-
-            if (context.action.name == "Move" && device is Mouse)
+            // Verificăm mișcarea mouse-ului (Point sau Look delta)
+            if (device is Mouse mouse)
             {
-                if (Mouse.current.delta.ReadValue().magnitude < 2.0f) return;
+                if (mouse.delta.ReadValue().magnitude < 0.5f) return;
             }
 
             if (CurrentScheme != ControlScheme.PC)
@@ -142,7 +141,6 @@ public class Inputs : MonoBehaviour
         CurrentScheme = newScheme;
         ApplyCursorStateForScheme();
         
-        // --- BLOCARE CLICK DE ACTIVARE ---
         // Dacă am schimbat schema (JustSwitched), dezactivăm temporar EventSystem
         // pentru a preveni ca primul click să activeze un buton de UI în același frame.
         if (JustSwitched && UnityEngine.EventSystems.EventSystem.current != null)
@@ -157,6 +155,14 @@ public class Inputs : MonoBehaviour
         {
             RestoreUISelection();
         }
+        else
+        {
+            // Pe PC, deselectăm totul la început pentru a evita "selecția fantomă" de pe gamepad
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+            }
+        }
 
         OnSchemeChanged?.Invoke(CurrentScheme);
         Debug.LogWarning($"[Inputs] SWITCHED SCHEME TO: {CurrentScheme} (Interaction blocked for activation frame)");
@@ -164,7 +170,7 @@ public class Inputs : MonoBehaviour
 
     private System.Collections.IEnumerator ReEnableEventSystem(UnityEngine.EventSystems.EventSystem es)
     {
-        yield return null; // Așteptăm un frame
+        yield return null; 
         if (es != null) es.enabled = true;
     }
 
@@ -198,7 +204,7 @@ public class Inputs : MonoBehaviour
     private void OnGUI()
     {
         GUI.depth = -2000;
-        Rect areaRect = new Rect(10, 10, 500, 250);
+        Rect areaRect = new Rect(10, 10, 300, 150);
         GUI.Box(areaRect, "");
         GUI.Box(areaRect, "<b><size=18><color=yellow> INPUT SYSTEM DEBUG (v2) </color></size></b>");
         GUILayout.BeginArea(new Rect(20, 40, 480, 200));

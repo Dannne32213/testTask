@@ -120,33 +120,6 @@ public class WindowManager : MonoBehaviour
 
         if (Inputs.Instance.JustSwitched) return;
         
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            WindowBase top = GetTopWindow();
-            if (top != null)
-            {
-                PointerEventData pointerData = new PointerEventData(EventSystem.current)
-                {
-                    position = Mouse.current.position.ReadValue()
-                };
-
-                List<RaycastResult> results = new List<RaycastResult>();
-                EventSystem.current.RaycastAll(pointerData, results);
-
-                foreach (var result in results)
-                {
-                    if (result.gameObject.GetComponentInParent<Selectable>() != null && result.gameObject.transform.IsChildOf(top.transform))
-                    {
-                        if (EventSystem.current.currentSelectedGameObject != result.gameObject)
-                        {
-                            EventSystem.current.SetSelectedGameObject(result.gameObject);
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        
         if (Inputs.Instance.BackPressed)
         {
             if (_windowStack.Count > 1) 

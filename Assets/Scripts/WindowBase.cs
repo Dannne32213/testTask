@@ -89,20 +89,22 @@ public class WindowBase : MonoBehaviour
             List<RaycastResult> results = new List<RaycastResult>();
             EventSystem.current.RaycastAll(pointerData, results);
 
+            bool foundHover = false;
             foreach (var result in results)
             {
                 Selectable selectable = result.gameObject.GetComponentInParent<Selectable>();
                 if (selectable != null && selectable.interactable && selectable.transform.IsChildOf(this.transform))
                 {
-                    GameObject target = selectable.gameObject;
-                    if (EventSystem.current.currentSelectedGameObject != target)
-                    {
-                        EventSystem.current.SetSelectedGameObject(target);
-                        _lastSelected = target;
-                        Debug.Log($"[WindowBase] Mouse hover auto-selected: {target.name}");
-                    }
+                    foundHover = true;
                     break;
                 }
+            }
+
+            // DACĂ MOUSE-UL NU ESTE PESTE NIMIC, DESELECTĂM TOTUL (Specific pentru PC)
+            // Asta previne ca un buton să rămână "selectat" vizual dacă mouse-ul a plecat de pe el
+            if (!foundHover && EventSystem.current.currentSelectedGameObject != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
             }
         }
     }

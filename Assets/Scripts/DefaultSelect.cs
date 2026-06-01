@@ -18,6 +18,9 @@ public class DefaultSelect : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (Inputs.Instance != null && Inputs.Instance.CurrentScheme == ControlScheme.PC) 
+            return;
+
         if(_eventSystem.currentSelectedGameObject==null || !_eventSystem.currentSelectedGameObject.activeInHierarchy) {
             _eventSystem.SetSelectedGameObject(DefaultButton);
         }
